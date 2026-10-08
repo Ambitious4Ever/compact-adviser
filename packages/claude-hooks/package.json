@@ -1,0 +1,23 @@
+{
+  "name": "compact-adviser-claude-hooks",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "description": "Claude Code command hooks that suggest /compact at a completed checkpoint, judged by Jev via OpenRouter.",
+  "type": "module",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "test": "node --test tests/*.test.ts",
+    "check": "npm run typecheck && npm run lint && npm test"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.0",
+    "@types/node": "^24.13.5",
+    "typescript": "^5.9.0"
+  }
+}

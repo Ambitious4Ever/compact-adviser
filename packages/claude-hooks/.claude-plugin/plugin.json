@@ -1,0 +1,52 @@
+{
+  "name": "compact-adviser-openrouter",
+  "version": "0.1.0",
+  "license": "MIT",
+  "description": "Suggests /compact at a completed checkpoint, judged by TypeSafe Jev through OpenRouter. Plain command hooks; needs Node 22.18+ and an OpenRouter API key.",
+  "author": { "name": "Ambitious4Ever" },
+  "homepage": "https://github.com/Ambitious4Ever/compact-adviser/tree/main/packages/claude-hooks#readme",
+  "repository": "https://github.com/Ambitious4Ever/compact-adviser",
+  "keywords": ["compact", "context", "context-management", "checkpoint", "openrouter"],
+  "userConfig": {
+    "mode": {
+      "type": "string",
+      "title": "Mode",
+      "description": "hint shows advice after a finished turn; off disables the adviser.",
+      "options": ["hint", "off"],
+      "default": "hint"
+    },
+    "minContextTokens": {
+      "type": "number",
+      "title": "Minimum context (tokens)",
+      "description": "No judgment below this context size.",
+      "default": 40000,
+      "min": 1
+    },
+    "contextLimitTokens": {
+      "type": "number",
+      "title": "Context limit (tokens)",
+      "description": "Where Claude Code auto-compacts for your model; the hint floor relaxes as context approaches it.",
+      "default": 200000,
+      "min": 1
+    },
+    "model": {
+      "type": "string",
+      "title": "OpenRouter model",
+      "description": "The OpenRouter model id that judges checkpoints.",
+      "default": "typesafe/jev-router"
+    },
+    "logRequests": {
+      "type": "boolean",
+      "title": "Log requests",
+      "description": "Append each request and sanitized outcome to ~/.claude/compact-adviser/requests-<session>.jsonl. Never logs the key.",
+      "default": false
+    },
+    "openrouterApiKey": {
+      "type": "string",
+      "title": "OpenRouter API key",
+      "description": "A non-empty OPENROUTER_API_KEY in the environment wins.",
+      "sensitive": true,
+      "default": ""
+    }
+  }
+}

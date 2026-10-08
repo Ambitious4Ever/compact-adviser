@@ -57,3 +57,7 @@ Development dependencies can be revisited when upgrading the supported API basel
 The native integration tests use the real Pi executable, Claude Code TUI, Codex TUI, or Grok agent, isolated configuration directories, and deterministic provider and TypeSafe fixtures.
 They prove API/UI integration, cancellation, and local safety conditions without exposing account credentials or conversation data.
 They do not establish live Jev precision or continued task quality after a real generated summary.
+
+## Fork variant: `packages/claude-hooks` (OpenRouter)
+
+This fork adds a Claude Code adapter built on plain command hooks. It sends the same bounded snapshot as the other packages to `https://openrouter.ai/api/v1/chat/completions` (or an `OPENROUTER_BASE` override that is https, or http on loopback), not to TypeSafe directly. OpenRouter then routes it to the configured model, `typesafe/jev-router` by default. The OpenRouter key comes from `OPENROUTER_API_KEY`, the plugin's sensitive `openrouterApiKey` option, `~/.claude/compact-adviser/config.json`, or a project `.env`. It's sent only as the `Authorization` header and is scrubbed from the snapshot and the optional request log. Per-session state and logs live under `~/.claude/compact-adviser/`.

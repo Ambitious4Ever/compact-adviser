@@ -1,0 +1,27 @@
+{
+  "description": "compact-adviser (OpenRouter): judges each finished turn and, at a completed checkpoint, shows one hint to run /compact",
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/run.ts\" stop",
+            "timeout": 20
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/run.ts\" session-start",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

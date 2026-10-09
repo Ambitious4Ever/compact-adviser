@@ -25,6 +25,25 @@
         "checkpoint",
         "productivity"
       ]
+    },
+    {
+      "name": "compact-adviser-openrouter",
+      "source": "./packages/claude-hooks",
+      "description": "Fork variant: suggests /compact at a completed checkpoint using plain command hooks (no early-access flag, works on Windows). Judgment runs on TypeSafe Jev through OpenRouter with your own OpenRouter key.",
+      "version": "0.1.0",
+      "category": "productivity",
+      "author": {
+        "name": "Ambitious4Ever"
+      },
+      "homepage": "https://github.com/Ambitious4Ever/compact-adviser/tree/main/packages/claude-hooks#readme",
+      "repository": "https://github.com/Ambitious4Ever/compact-adviser",
+      "license": "MIT",
+      "keywords": [
+        "compact",
+        "context",
+        "checkpoint",
+        "openrouter"
+      ]
     }
   ]
 }

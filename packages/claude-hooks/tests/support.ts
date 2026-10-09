@@ -67,13 +67,18 @@ export function answers(finished: number, handsOn: number) {
   };
 }
 
-export function completion(content: unknown, model = "typesafe/jev-latest") {
+/** A decisions-endpoint response: `answers` carry `type: "choice"`, as TypeSafe's own API does. */
+export function completion(
+  answer: ReturnType<typeof answers>,
+  model = "typesafe/jev-1.13-20260917",
+) {
   return {
     model,
-    choices: [
-      { message: { content: typeof content === "string" ? content : JSON.stringify(content) } },
-    ],
-    usage: { prompt_tokens: 1000, completion_tokens: 50 },
+    answers: {
+      done: { type: "choice", ...answer.done },
+      shape: { type: "choice", ...answer.shape },
+    },
+    usage: { input_tokens: 1000, output_tokens: 50 },
   };
 }
 

@@ -8,7 +8,6 @@ import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { parseDotenvKey } from "./env.ts";
-import { DEFAULT_MODEL } from "./judge.ts";
 
 export type Mode = "hint" | "off";
 
@@ -18,7 +17,6 @@ export interface Config {
   /** The denominator for context pressure: Claude Code's auto-compact point or the window. */
   contextLimitTokens: number;
   contextBudgetTokens: number;
-  model: string;
   logRequests: boolean;
   profile: string;
 }
@@ -28,7 +26,6 @@ export const DEFAULTS: Config = {
   minContextTokens: 40000,
   contextLimitTokens: 200000,
   contextBudgetTokens: 0,
-  model: DEFAULT_MODEL,
   logRequests: false,
   profile: "",
 };
@@ -85,7 +82,6 @@ export function loadConfig(env: Env = process.env): Config {
       DEFAULTS.contextBudgetTokens,
       0,
     ),
-    model: raw("model", env, file) ?? DEFAULTS.model,
     logRequests: log === "true" || log === "1",
     profile: raw("profile", env, file) ?? "",
   };

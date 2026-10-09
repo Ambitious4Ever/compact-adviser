@@ -127,22 +127,21 @@ describe("SessionStart after compaction", () => {
 describe("config", () => {
   test("env beats plugin option beats config file; key from project .env last", () => {
     const home = tempDir();
-    writeFileSync(join(home, "config.json"), JSON.stringify({ model: "file/model", mode: "off" }));
+    writeFileSync(
+      join(home, "config.json"),
+      JSON.stringify({ minContextTokens: 111, mode: "off" }),
+    );
     const base = { COMPACT_ADVISER_HOME: home };
-    assert.equal(loadConfig(base).model, "file/model");
+    assert.equal(loadConfig(base).minContextTokens, 111);
     assert.equal(loadConfig(base).mode, "off");
+    const opt = { ...base, CLAUDE_PLUGIN_OPTION_MINCONTEXTTOKENS: "222" };
+    assert.equal(loadConfig(opt).minContextTokens, 222);
     assert.equal(
-      loadConfig({ ...base, CLAUDE_PLUGIN_OPTION_MODEL: "opt/model" }).model,
-      "opt/model",
+      loadConfig({ ...opt, COMPACT_ADVISER_MIN_CONTEXT_TOKENS: "333" }).minContextTokens,
+      333,
     );
-    assert.equal(
-      loadConfig({
-        ...base,
-        CLAUDE_PLUGIN_OPTION_MODEL: "opt/model",
-        COMPACT_ADVISER_MODEL: "env/model",
-      }).model,
-      "env/model",
-    );
+    // The judge model is pinned: no setting can change it.
+    assert.equal("model" in loadConfig({ ...base, COMPACT_ADVISER_MODEL: "other/model" }), false);
     const project = tempDir();
     writeFileSync(join(project, ".env"), 'OPENROUTER_API_KEY="from-dotenv"\n');
     assert.equal(loadApiKey(base, project), "from-dotenv");

@@ -2,8 +2,7 @@ import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import { describe, test } from "node:test";
 import {
-  chatEndpoint,
-  DEFAULT_MODEL,
+  decisionsEndpoint,
   ENDPOINT,
   FLOOR_MAX,
   FLOOR_MIN,
@@ -11,8 +10,9 @@ import {
   JudgeError,
   judge,
   MAX_REQUEST_BYTES,
+  MODEL,
   nodeTransport,
-  parseCompletion,
+  parseJudgment,
   qualifies,
   requestBody,
   score,
@@ -23,8 +23,8 @@ const kind = (k: string) => (e: unknown) => e instanceof JudgeError && e.kind ==
 
 describe("scoring (unchanged from upstream)", () => {
   test("finished hands-on work scores near 1, coordination near 0.5", () => {
-    assert.ok(score(parseCompletion(completion(answers(1, 1)))) > 0.99);
-    assert.ok(Math.abs(score(parseCompletion(completion(answers(1, 0)))) - 0.5) < 0.01);
+    assert.ok(score(parseJudgment(completion(answers(1, 1)))) > 0.99);
+    assert.ok(Math.abs(score(parseJudgment(completion(answers(1, 0)))) - 0.5) < 0.01);
   });
   test("the floor slides from strict to loose with context pressure", () => {
     assert.equal(floorFor(Number.NaN), FLOOR_MAX);
@@ -33,46 +33,41 @@ describe("scoring (unchanged from upstream)", () => {
     assert.ok(floorFor(0.5) < FLOOR_MAX && floorFor(0.5) > FLOOR_MIN);
   });
   test("qualifies compares score to the floor", () => {
-    const j = parseCompletion(completion(answers(0.8, 0.9)));
+    const j = parseJudgment(completion(answers(0.8, 0.9)));
     assert.equal(qualifies(j, 0.05), false);
     assert.equal(qualifies(j, 0.9), true);
   });
 });
 
 describe("request body", () => {
-  test("asks OpenRouter for strict JSON with both questions", () => {
+  test("asks the decisions endpoint for the pinned Jev model with both questions", () => {
     const body = JSON.parse(requestBody({ recent: [] }));
-    assert.equal(body.model, DEFAULT_MODEL);
-    assert.equal(body.response_format.type, "json_schema");
-    assert.deepEqual(body.response_format.json_schema.schema.required, ["done", "shape"]);
-    assert.match(body.messages[0].content, /untrusted conversation data/);
-    assert.deepEqual(JSON.parse(body.messages[1].content), { state: { recent: [] } });
+    assert.equal(body.model, "~typesafe/jev-latest");
+    assert.equal(MODEL, "~typesafe/jev-latest");
+    assert.deepEqual(body.state, { recent: [] });
+    assert.deepEqual(Object.keys(body.questions), ["done", "shape"]);
   });
   test("oversized state is refused before any request", () => {
     assert.throws(() => requestBody({ text: "x".repeat(MAX_REQUEST_BYTES) }), kind("input"));
   });
 });
 
-describe("completion parsing", () => {
-  test("accepts fenced JSON and rescales slightly-off probabilities", () => {
-    const a = answers(0.9, 0.9);
-    a.done.probabilities.finished = 0.95; // sums to 1.05
-    a.done.confidence = 0.95;
-    const j = parseCompletion(completion(`\`\`\`json\n${JSON.stringify(a)}\n\`\`\``));
-    const sum = Object.values(j.done.probabilities).reduce((x, y) => x + y, 0);
-    assert.ok(Math.abs(sum - 1) < 1e-9);
-    assert.equal(j.model, "typesafe/jev-latest");
-    assert.equal(j.inputTokens, 1000);
+describe("response parsing", () => {
+  test("accepts a Jev answer", () => {
+    return judge({}, "k", fakeTransport(200, completion(answers(0.9, 0.9)))).then((j) => {
+      assert.equal(j.model, "typesafe/jev-1.13-20260917");
+      assert.equal(j.inputTokens, 1000);
+    });
   });
-  test("rejects malformed answers", () => {
-    assert.throws(() => parseCompletion(completion("not json")), kind("response"));
-    assert.throws(() => parseCompletion({ choices: [] }), kind("response"));
-    const wrong = answers(0.9, 0.9);
-    wrong.done.choice = "not_finished"; // not the most probable option
-    assert.throws(() => parseCompletion(completion(wrong)), kind("response"));
-    const missing = answers(0.9, 0.9) as { done: unknown; shape: unknown };
-    delete (missing.shape as { probabilities: Record<string, number> }).probabilities.unclear;
-    assert.throws(() => parseCompletion(completion(missing)), kind("response"));
+  test("rejects malformed answers", async () => {
+    await assert.rejects(judge({}, "k", fakeTransport(200, { answers: {} })), kind("response"));
+    const wrong = completion(answers(0.9, 0.9));
+    wrong.answers.done.choice = "not_finished"; // not the most probable option
+    await assert.rejects(judge({}, "k", fakeTransport(200, wrong)), kind("response"));
+  });
+  test("an answer from any other model is never used", async () => {
+    const other = completion(answers(1, 1), "deepseek/deepseek-v4.1-flash");
+    await assert.rejects(judge({}, "k", fakeTransport(200, other)), kind("response"));
   });
 });
 
@@ -100,7 +95,7 @@ describe("judge transport", () => {
       await assert.rejects(
         judge({}, "k", {
           ...nodeTransport,
-          endpoint: chatEndpoint(`http://127.0.0.1:${port}/api/v1`),
+          endpoint: decisionsEndpoint(`http://127.0.0.1:${port}/api/alpha`),
           timeoutMs: 200,
         }),
         kind("timeout"),
@@ -114,14 +109,11 @@ describe("judge transport", () => {
 
 describe("endpoint override", () => {
   test("only https or loopback http, without credentials or query", () => {
-    assert.equal(chatEndpoint(undefined), ENDPOINT);
-    assert.equal(
-      chatEndpoint("https://example.com/v1/"),
-      "https://example.com/v1/chat/completions",
-    );
-    assert.equal(chatEndpoint("http://localhost:9/x"), "http://localhost:9/x/chat/completions");
-    assert.equal(chatEndpoint("http://example.com"), undefined);
-    assert.equal(chatEndpoint("https://u:p@example.com"), undefined);
-    assert.equal(chatEndpoint("https://example.com?a=1"), undefined);
+    assert.equal(decisionsEndpoint(undefined), ENDPOINT);
+    assert.equal(decisionsEndpoint("https://example.com/v1/"), "https://example.com/v1/decisions");
+    assert.equal(decisionsEndpoint("http://localhost:9/x"), "http://localhost:9/x/decisions");
+    assert.equal(decisionsEndpoint("http://example.com"), undefined);
+    assert.equal(decisionsEndpoint("https://u:p@example.com"), undefined);
+    assert.equal(decisionsEndpoint("https://example.com?a=1"), undefined);
   });
 });

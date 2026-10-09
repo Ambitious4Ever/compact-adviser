@@ -10,8 +10,8 @@ import {
   dataDir as resolveDataDir,
 } from "./config.ts";
 import {
-  chatEndpoint,
   contextPressure,
+  decisionsEndpoint,
   floorFor,
   JudgeError,
   judge,
@@ -91,7 +91,7 @@ export async function onStop(input: HookInput, deps: Deps): Promise<HookOutput> 
   } catch (error) {
     return { systemMessage: `compact-adviser: ${(error as Error).message}` };
   }
-  const endpoint = chatEndpoint(deps.env.OPENROUTER_BASE);
+  const endpoint = decisionsEndpoint(deps.env.OPENROUTER_BASE);
   const view = snapshot(messagesUpTo(recs, latest), [key]);
   if (view.conversationTokens <= 20000) return {};
   const print = fingerprint(view.checkpointText);
@@ -102,9 +102,9 @@ export async function onStop(input: HookInput, deps: Deps): Promise<HookOutput> 
     if (endpoint === undefined) throw new JudgeError("configuration");
     log(config, dir, sessionId, {
       kind: "request",
-      body: JSON.parse(requestBody(view.state, profile, config.model)),
+      body: JSON.parse(requestBody(view.state, profile)),
     });
-    result = await judge(view.state, key, { ...deps.transport, endpoint }, profile, config.model);
+    result = await judge(view.state, key, { ...deps.transport, endpoint }, profile);
   } catch (error) {
     const kind = error instanceof JudgeError ? error.kind : "unavailable";
     log(config, dir, sessionId, { kind: "error", error: kind });

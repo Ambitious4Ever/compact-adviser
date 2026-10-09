@@ -5,7 +5,7 @@ This variant lives in a fork. It tells you when your Claude Code session has rea
 It reuses the upstream judge (Jev's two questions, the score, and the sliding floor) and changes two things:
 
 - **Plain command hooks.** Upstream `packages/claude-mod` needs the early-access `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1`. This version uses ordinary `Stop` and `SessionStart` hooks, so it works on any Claude Code install, including Windows.
-- **OpenRouter instead of TypeSafe's API.** The judgment is a chat completion against `typesafe/jev-router`, or any model you set, with a strict JSON schema.
+- **OpenRouter instead of TypeSafe's API.** The judgment is a request to OpenRouter's decisions endpoint (`/api/alpha/decisions`), pinned to `~typesafe/jev-latest`. Same request and response shape as TypeSafe's own API, so the scoring is unchanged. An answer from any model outside the `typesafe/jev-` family is discarded.
 
 This version is hint-only. Command hooks can't trigger `/compact` themselves.
 
@@ -34,7 +34,6 @@ Each setting is read from the first place that has a value: an environment varia
 | minContextTokens | `COMPACT_ADVISER_MIN_CONTEXT_TOKENS` | 40000 |
 | contextLimitTokens | `COMPACT_ADVISER_CONTEXT_LIMIT_TOKENS` | 200000 |
 | contextBudgetTokens | `COMPACT_ADVISER_CONTEXT_BUDGET_TOKENS` | 0 (off) |
-| model | `COMPACT_ADVISER_MODEL` | `typesafe/jev-router` |
 | logRequests | `COMPACT_ADVISER_LOG_REQUESTS` | false |
 | profile (judge profile JSON) | `COMPACT_ADVISER_PROFILE` | shipped defaults |
 
@@ -52,7 +51,7 @@ Errors, timeouts and malformed replies never produce a hint. A bad key or bad co
 
 ## Data that leaves your machine
 
-The snapshot is the same bounded, redacted shape as upstream: user constraints, up to the last 64 replies with tool results clipped to 512 bytes, an existing summary, and saved file names. It's capped at 32,000 bytes. It goes to **OpenRouter**, which routes it to TypeSafe's Jev or whichever model you set. Your key is sent only in the `Authorization` header. It's scrubbed from the snapshot and never logged. Redaction is best-effort, so don't use this on material that must not leave the machine.
+The snapshot is the same bounded, redacted shape as upstream: user constraints, up to the last 64 replies with tool results clipped to 512 bytes, an existing summary, and saved file names. It's capped at 32,000 bytes. It goes to **OpenRouter**, which forwards it to TypeSafe's Jev (`~typesafe/jev-latest`). Your key is sent only in the `Authorization` header. It's scrubbed from the snapshot and never logged. Redaction is best-effort, so don't use this on material that must not leave the machine.
 
 ## Develop
 

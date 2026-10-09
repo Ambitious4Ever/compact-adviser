@@ -12,7 +12,7 @@ async function readStdin(): Promise<string> {
 async function main(): Promise<void> {
   let output = {};
   try {
-    const input = JSON.parse((await readStdin()) || "{}") as HookInput;
+    const input = JSON.parse((await readStdin()).replace(/^﻿/, "") || "{}") as HookInput;
     const event = process.argv[2];
     if (event === "stop") output = await onStop(input, liveDeps());
     else if (event === "session-start") output = onSessionStart(input, liveDeps());

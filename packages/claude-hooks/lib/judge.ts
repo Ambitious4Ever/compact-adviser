@@ -353,7 +353,7 @@ export function requestBody(
   const body = JSON.stringify({
     model,
     temperature: 0,
-    max_tokens: 400,
+    max_tokens: 3000,
     messages: [
       { role: "system", content: systemPrompt(questions) },
       { role: "user", content: JSON.stringify({ state }) },
